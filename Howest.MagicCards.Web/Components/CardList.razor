@@ -1,0 +1,136 @@
+﻿@page "/cards"
+@using Howest.MagicCards.Shared.Dtos;
+@using Howest.MagicCards.Web.Services
+@using Howest.MagicCards.Web.Components;
+@inject CardService CardService
+@inject DeckService DeckService
+@inject NavigationManager NavigationManager
+
+<div class="container">
+<div>
+        <div class="mb-3">
+            <h4>Sort By</h4>
+            <div class="input-group w-auto">
+                <select class="form-select" @bind="sortBy">
+                    <option value="Name">Name</option>
+                    <option value="Id">Id</option>
+                    <option value="MtgId">MtgId</option>
+                    <option value="RarityCode">Rarity</option>
+                    <option value="Type">Type</option>
+                    <option value="Power">Power</option>
+                    <option value="Toughness">Toughness</option>
+                    <option value="ManaCost">Mana Cost</option>
+                </select>
+                <div class="input-group-text">
+                    <input class="form-check-input mt-0" type="checkbox" @bind="sortDescending" /> Descending
+                </div>
+            </div>
+</div>
+<CardFilter filter="filter" OnApplyFilters="ApplyFilters" OnFilterChanged="UpdateFilter" />
+
+
+
+
+
+
+@if (cards == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card-grid">
+        @foreach (CardListDto card in cards)
+        {
+            <div class="card">
+                <img src="@card.OriginalImageUrl" alt="@card.Name" @onclick="() => AddCardToDeck(card.Id)" />
+                <p>@card.Name</p>
+                <button @onclick="() => ShowCardDetail(card.Id)">See Details</button>
+                <button @onclick="() => AddCardToDeck(card.Id)">Add to Deck</button>
+            </div>
+        }
+    </div>
+    <button @onclick="LoadMoreCards" disabled="@isLoading">Load More</button>
+}
+    </div>
+    <Deck OnDeckChanged="RefreshDeck" OnAddCard="AddCardToDeck" @ref="DeckComponent" />
+</div>
+@code {
+    private List<CardListDto> cards;
+    private int pageNumber = 1;
+    private bool isLoading = false;
+    private string sortBy = "Name";
+    private bool sortDescending = false; 
+    private CardFilterDto filter = new CardFilterDto();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCards();
+    }
+
+    private async Task LoadMoreCards()
+    {
+        pageNumber++;
+        await LoadCards();
+    }
+
+    private void UpdateFilter(CardFilterDto updatedFilter)
+    {
+        filter = updatedFilter;
+    }
+
+    void ShowCardDetail(long id)
+    {
+        NavigationManager.NavigateTo($"/cardDetail/{id}");
+    }
+
+    async void AddCardToDeck(long id)
+    {
+        List<DeckCardDto> currentDeck = await DeckService.GetDeckAsync();
+        int totalQuantity = currentDeck.Count;
+
+        if (totalQuantity < 60)
+        {
+            CardDetailDto card = await CardService.GetCardDetailAsync(id);
+            await DeckService.AddCardToDeckAsync(card);
+            await RefreshDeck();
+        }
+        else
+        {
+
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        pageNumber = 1;
+        cards = null;
+        await LoadCards();
+    }
+
+    private async Task LoadCards()
+    {
+        isLoading = true;
+
+        List<CardListDto> newCards = await CardService.GetCardsAsync(filter, pageSize: 150, pageNumber: pageNumber, sortBy: sortBy, sortDescending: sortDescending);
+
+        if (cards == null)
+        {
+            cards = new List<CardListDto>();
+        }
+        cards.AddRange(newCards);
+
+        isLoading = false;
+    }
+
+    private async Task RefreshDeck()
+    {
+        if (DeckComponent != null)
+        {
+            await DeckComponent.RefreshDeck();
+        }
+    }
+
+
+    private Deck DeckComponent;
+}

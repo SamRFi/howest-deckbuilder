@@ -1,0 +1,52 @@
+﻿@page "/cardDetail/{id}"
+@using Howest.MagicCards.Shared.Dtos
+@using Howest.MagicCards.Web.Services
+@using System.Text.Json.Serialization;
+@inject CardService CardService
+@inject NavigationManager NavigationManager
+
+<h3 class="card-title">@cardDetail?.Name</h3>
+
+@if (cardDetail == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+        <img src="@cardDetail.OriginalImageUrl" alt="@cardDetail.Name" />
+        <div class="card-body">
+            <p>@cardDetail.Text</p>
+
+            @foreach (var prop in cardDetail.GetType().GetProperties())
+            {
+                if (prop.GetValue(cardDetail) != null && !prop.GetCustomAttributes(typeof(JsonIgnoreAttribute), false).Any())
+                {
+                    string propertyName = prop.Name;
+                    var propertyValue = prop.GetValue(cardDetail);
+                    <p class="card-text">@propertyName: @propertyValue</p>
+                }
+            }
+
+            <button class="btn btn-primary" @onclick="NavigateBack">Go Back</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string id { get; set; }
+
+    private CardDetailDto cardDetail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cardDetail = await CardService.GetCardDetailAsync(long.Parse(id));
+    }
+
+    private void NavigateBack()
+    {
+        NavigationManager.NavigateTo("/cards");
+    }
+}
+

@@ -1,0 +1,94 @@
+﻿@using Howest.MagicCards.Shared.Dtos;
+@using Howest.MagicCards.Web.Services
+@inject DeckService DeckService
+
+
+    
+    <div class="row">
+        <div class="col-md-12">
+            <button class="btn btn-primary mb-3" @onclick="ClearDeck">Clear Deck</button>
+            <ul class="list-group">
+                @foreach (DeckCardDto card in deck)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div @onclick="() => RemoveCard(card.Id)" class="text-primary" style="cursor:pointer;">
+                            @card.Name
+                        </div>
+                    <div class="badge bg-primary rounded-pill" @onclick="() => OnAddCard.InvokeAsync(card.Id)" style="cursor:pointer;">
+                            @card.Quantity
+                        </div>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+
+@code {
+    [Parameter]
+    public EventCallback OnDeckChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<long> OnAddCard { get; set; }
+
+
+    private List<DeckCardDto> deck = new List<DeckCardDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchDeck();
+    }
+
+    private async Task FetchDeck()
+    {
+        List<DeckCardDto> cardList = await DeckService.GetDeckAsync();
+        deck = CalculateCardQuantities(cardList);
+        StateHasChanged();
+    }
+
+    private async Task RemoveCard(long id)
+    {
+        await DeckService.DeleteCardFromDeckAsync(id);
+        await FetchDeck();
+        await OnDeckChanged.InvokeAsync();
+    }
+
+    private async Task ClearDeck()
+    {
+        await DeckService.ClearDeckAsync();
+        deck.Clear();
+        StateHasChanged();
+        await OnDeckChanged.InvokeAsync();
+    }
+
+
+    public async Task RefreshDeck()
+    {
+        await FetchDeck();
+    }
+
+    private List<DeckCardDto> CalculateCardQuantities(List<DeckCardDto> cards)
+    {
+        List<DeckCardDto> deckCards = new List<DeckCardDto>();
+
+        foreach (DeckCardDto card in cards)
+        {
+            DeckCardDto existingCard = deckCards.FirstOrDefault(c => c.Id == card.Id);
+            if (existingCard != null)
+            {
+                existingCard.Quantity++;
+            }
+            else
+            {
+                deckCards.Add(new DeckCardDto
+                    {
+                        Id = card.Id,
+                        Name = card.Name,
+                        Quantity = 1
+                    });
+            }
+        }
+
+        return deckCards;
+    }
+}

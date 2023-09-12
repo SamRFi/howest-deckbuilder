@@ -1,0 +1,72 @@
+@using Howest.MagicCards.Shared.Dtos
+@using Microsoft.AspNetCore.Components
+
+<h3>Filter Cards</h3>
+
+<div class="container">
+    <form @onsubmit="ApplyFilters">
+        <div class="row">
+            <div class="col-md">
+                <div class="mb-3">
+                    <label for="setName" class="form-label">Set Name:</label>
+                    <input type="text" id="setName" @bind="filter.SetName" class="form-control" />
+                </div>
+            </div>
+            <div class="col-md">
+                <div class="mb-3">
+                    <label for="artistName" class="form-label">Artist Name:</label>
+                    <input type="text" id="artistName" @bind="filter.ArtistName" class="form-control" />
+                </div>
+            </div>
+            <div class="col-md">
+                <div class="mb-3">
+                    <label for="rarityName" class="form-label">Rarity Name:</label>
+                    <select id="rarityName" @bind="filter.RarityName" class="form-control">
+                        <option value="">Select Rarity</option>
+                        <option value="Common">Common</option>
+                        <option value="Uncommon">Uncommon</option>
+                        <option value="Rare">Rare</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md">
+                <div class="mb-3">
+                    <label for="cardTypeShortHand" class="form-label">Card Type:</label>
+                    <input type="text" id="cardTypeShortHand" @bind="filter.CardTypeShortHand" class="form-control" />
+                </div>
+            </div>
+            <div class="col-md">
+                <div class="mb-3">
+                    <label for="cardName" class="form-label">Card Name:</label>
+                    <input type="text" id="cardName" @bind="filter.CardName" class="form-control" />
+                </div>
+            </div>
+            <div class="col-md">
+                <div class="mb-3">
+                    <label for="cardText" class="form-label">Card Text:</label>
+                    <input type="text" id="cardText" @bind="filter.CardText" class="form-control" />
+                </div>
+            </div>
+        </div>
+        <button @onclick="ApplyFilters" class="btn btn-primary">Apply Filters</button>
+    </form>
+</div>
+
+@code {
+    [Parameter]
+    public CardFilterDto filter { get; set; }
+
+    [Parameter]
+    public EventCallback OnApplyFilters { get; set; }
+
+    [Parameter]
+    public EventCallback<CardFilterDto> OnFilterChanged { get; set; }
+
+    private void ApplyFilters()
+    {
+        OnFilterChanged.InvokeAsync(filter);
+        OnApplyFilters.InvokeAsync();
+    }
+}
+
+
